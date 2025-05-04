@@ -4,102 +4,91 @@ from constant import *
 from mapas import *
 from ray import *
 from player import *
-
 from raycast import *
-
-# from sprites import *
-from  sprite_handler import *  
+from sprite_handler import *
 from gun import *
 from npc import *
+from menu import *
+
+# Initialize Pygame
+pygame.init()
 screen = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+pygame.display.set_caption("Wolfenstein")
+
+# Game states
+MENU = 0
+GAME = 1
+current_state = MENU
+
+# Game objects initialization
+map = Map()
+player = Player(map)
+renderer = ObjectRenderer()
+raycaster = Raycaster(player, map, renderer)
+sprite_handler = ObjectHandler(player, raycaster, map)
+gunmanager = Gunmanager(player, raycaster)
+clock = pygame.time.Clock()
 
 
-# start_screen=pygame.transform.scale(pygame.image.load("python/wolfenstein/textures/Wolf3D-Title.png").convert_alpha(), (WINDOW_WIDTH,WINDOW_HEIGHT))
-# def show_start_screen():
-    
-#     waiting = True
-#     while waiting:
-#         for event in pygame.event.get():
-#             if event.type == pygame.QUIT:
-#                 pygame.quit()
-              
-#             if event.type == pygame.MOUSEBUTTONDOWN:
-#                 waiting = False
-#                 game_active=True
-#             if event.type == pygame.KEYDOWN:
-#                 if event.key == pygame.K_ESCAPE:
-#                     pygame.quit()
-                
-#                 waiting = False
-#         screen.blit(start_screen, (0, 0))
+def reset_game():
+    global map, player, renderer, raycaster, sprite_handler, gunmanager
+    # Reinitialize all game objects
+    map = Map()
+    player = Player(map)
+    renderer = ObjectRenderer()
+    raycaster = Raycaster(player, map, renderer)
+    sprite_handler = ObjectHandler(player, raycaster, map)
+    gunmanager = Gunmanager(player, raycaster)
 
 
-
-
-
-
-
-game_active=True
-map=Map()
-player=Player(map)
-clock=pygame.time.Clock()
-renderer=ObjectRenderer()
-raycaster=Raycaster(player, map,renderer)
-# sprite=SpriteObject(player,raycaster)
-# animatedSprite=AnimatedSprite(player,raycaster)
-sprite_handler=ObjectHandler(player,raycaster,map)
-# game =Game(player)
-# show_start_screen()
-gun=Gun(player,raycaster)
-# npc=NPC(player,raycaster)
+# Main game loop
 running = True
 while running:
     clock.tick(60)
+
+    # Event handling
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-            
-        if event.type == pygame.MOUSEBUTTONDOWN and game_active==False:
-            game_active=True
 
-    if game_active:
-        pygame.display.set_caption(f"{clock.get_fps()}")
-        pygame.draw.rect(screen, (60,60,60),(0,0,WINDOW_WIDTH, WINDOW_HEIGHT/2))
-        pygame.draw.rect(screen, (100,100,100),(0,WINDOW_HEIGHT/2,WINDOW_WIDTH, WINDOW_HEIGHT))
-        #map.render(screen) 
-        # plaayer.player_position(screen)  
-        
-        
-        player.update(map)
+    # State management
+    if current_state == MENU:
+        # Show menu and wait for user choice
+        menu_result = show_menu(screen)
+
+        if menu_result == "start":
+            reset_game()
+            current_state = GAME
+        elif menu_result == "quit":
+            running = False
+
+    elif current_state == GAME:
+        # Game rendering and logic
+        pygame.display.set_caption(f"{int(clock.get_fps())}")
+
+        # Background
+        pygame.draw.rect(screen, (60, 60, 60),
+                         (0, 0, WINDOW_WIDTH, WINDOW_HEIGHT/2))
+        pygame.draw.rect(screen, (100, 100, 100),
+                         (0, WINDOW_HEIGHT/2, WINDOW_WIDTH, WINDOW_HEIGHT))
+
+        # Game systems
         raycaster.castallrays()
-
-        # #   
-        
         raycaster.render()
-
-
-        # sprite.get_sprite()
-        # animatedSprite.update()
-
-
-
+        gunmanager.update_player_damage()
+        gunmanager.update_player_distance()
         sprite_handler.print_sprites()
-        raycaster.render_objects(screen) 
-        gun.update(screen)
+        sprite_handler.hit()
+        raycaster.render_objects(screen)
+        gunmanager.update(screen)
 
+        if player.update(map, screen):
+            current_state = MENU
+        # Check for escape to return to menu
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_ESCAPE]:
+            current_state = MENU
 
+    pygame.display.update()
 
-
-        # npc.run(screen) 
-        # npc.update(screen)
-        # game.render_sprites(screen,raycaster.depth_buffer)
-        pygame.display.update()
-    
-    
-    
-    # else:   
-    #     screen.blit(start_screen, (0, 0))
-    #     pygame.display.update()
-    #     continue
-    
 pygame.quit()
