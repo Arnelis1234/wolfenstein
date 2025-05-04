@@ -111,7 +111,7 @@ def write_highscore(score):
 ### 3.1 Results
 - Implemented a functional first-person shooter game with raycasting.
 - Demonstrated OOP principles.
-- 
+- Learned much valuable information about python
 
 ### 3.2 Conclusions
 - The coursework achieved a playable game that meets the functional requirements.
